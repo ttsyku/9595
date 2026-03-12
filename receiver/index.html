@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>媒体接收中心 · 真实预览下载</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #0b0b0f;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 12px;
+        }
+
+        .receiver-panel {
+            max-width: 1400px;
+            width: 100%;
+            background: #141417;
+            border-radius: 32px;
+            padding: 20px 18px 28px;
+            box-shadow: 0 25px 50px -8px rgba(0,0,0,0.8), 0 0 0 1px #2c2c30 inset;
+            margin: 10px 0;
+        }
+
+        .header-flex {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 15px;
+        }
+
+        .title-section h1 {
+            color: white;
+            font-size: clamp(22px, 6vw, 28px);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .title-section h1 span {
+            background: #ff3b30;
+            font-size: 14px;
+            padding: 4px 14px;
+            border-radius: 40px;
+            color: white;
+        }
+
+        .stats-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: #1f1f23;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid #3a3a40;
+        }
+
+        .stat-item {
+            color: #0a84ff;
+            font-weight: 500;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 22px;
+        }
+
+        @media (min-width: 1000px) {
+            .dashboard-grid {
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+
+        .card {
+            background: #1a1a1f;
+            border-radius: 28px;
+            padding: 20px 18px;
+            border: 1px solid #2c2c30;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            color: #e5e5e7;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-live {
+            background: #0a84ff;
+            color: white;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+        }
+
+        /* 预览区域 */
+        .preview-section {
+            background: #0f0f13;
+            border-radius: 22px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .preview-area {
+            aspect-ratio: 16/9;
+            background: #0a0a0c;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #5a5a62;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #2c2c30;
+        }
+
+        #previewImage {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
+        #previewVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            background: #000;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .preview-placeholder .icon {
+            font-size: 48px;
+        }
+
+        .preview-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #1a1a1f;
+            border-radius: 16px;
+            border: 1px solid #2c2c30;
+        }
+
+        .preview-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #2c2c30;
+        }
+
+        .preview-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .preview-label {
+            color: #8e8e93;
+            font-size: 14px;
+        }
+
+        .preview-value {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0;
+        }
+
+        .action-btn {
+            background: #2c2c30;
+            border: none;
+            color: #e5e5e7;
+            padding: 12px 18px;
+            border-radius: 40px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            flex: 1 1 auto;
+            justify-content: center;
+            border: 1px solid #3a3a40;
+            transition: all 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
+        }
+
+        .action-btn.primary {
+            background: #0a84ff;
+            color: white;
+        }
+
+        .action-btn.warning {
+            background: #ff9f0a;
+            color: white;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filter-tab {
+            background: #2c2c30;
+            border: none;
+            color: #a0a0a5;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #3a3a40;
+        }
+
+        .filter-tab.active {
+            background: #0a84ff;
+            color: white;
+            border-color: #0a84ff;
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .media-grid::-webkit-scrollbar {
+            width: 5px;
+        }
+        .media-grid::-webkit-scrollbar-thumb {
+            background: #3a3a40;
+            border-radius: 10px;
+        }
+
+        .media-card {
+            background: #222227;
+            border-radius: 16px;
+            padding: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .media-card:hover {
+            background: #2a2a2f;
+        }
+
+        .media-card.selected {
+            border-color: #0a84ff;
+            background: #1a1a25;
+        }
+
+        .media-thumb {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #0d0d11;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            border: 1px solid #3a3a40;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .media-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-name {
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            word-break: break-word;
+            width: 100%;
+        }
+
+        .media-meta {
+            color: #8e8e93;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .media-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .media-badge.photo {
+            background: #0a84ff22;
+            color: #0a84ff;
+        }
+
+        .media-badge.video {
+            background: #ff9f0a22;
+            color: #ff9f0a;
+        }
+
+        .media-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .icon-btn.download {
+            background: #0a84ff;
+            color: white;
+        }
+
+        .icon-btn.download:hover {
+            background: #0063ce;
+            transform: scale(1.05);
+        }
+
+        .icon-btn.delete {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .icon-btn.delete:hover {
+            background: #d63026;
+            transform: scale(1.05);
+        }
+
+        .empty-gallery {
+            color: #5a5a62;
+            text-align: center;
+            padding: 50px 20px;
+            grid-column: 1 / -1;
+        }
+
+        .footer-tip {
+            color: #48484d;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 22px;
+            border-top: 1px solid #2c2c30;
+            padding-top: 18px;
+        }
+
+        .log-area {
+            background: #0f0f13;
+            border-radius: 16px;
+            padding: 12px;
+            color: #8e8e93;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
+        .waiting-animation {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #0a84ff;
+            border-radius: 50%;
+            margin-left: 8px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="receiver-panel">
+        <div class="header-flex">
+            <div class="title-section">
+                <h1>
+                    📡 媒体接收中心
+                    <span>真实预览下载</span>
+                </h1>
+                <p>从前端接收真实图片数据 · 点击预览下载</p>
+            </div>
+            <div class="stats-group">
+                <div class="stat-item"><span>📸</span> 照片 <span id="photoCount">0</span></div>
+                <div class="stat-item"><span>🎥</span> 录像 <span id="videoCount">0</span></div>
+                <div class="stat-item"><span>📦</span> 总数 <span id="totalCount">0</span></div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- 左侧：大图预览区 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🔍 实时预览</h2>
+                    <span class="badge-live" id="previewStatus">
+                        等待数据
+                        <span class="waiting-animation"></span>
+                    </span>
+                </div>
+                
+                <div class="preview-section">
+                    <div class="preview-area" id="previewArea">
+                        <img id="previewImage" src="" alt="preview">
+                        <video id="previewVideo" controls></video>
+                        <div class="preview-placeholder" id="previewPlaceholder">
+                            <div class="icon">📡</div>
+                            <div>等待前端发送数据...</div>
+                            <div style="font-size:12px; margin-top:10px;">请在前端页面拍照</div>
+                        </div>
+                    </div>
+
+                    <div class="preview-info" id="previewInfo" style="display: none;">
+                        <div class="preview-info-row">
+                            <span class="preview-label">文件名</span>
+                            <span class="preview-value" id="previewFileName">-</span>
+                        </div>
+                        <div class="preview-info-row">
+                            <span class="preview-label">类型</span>
+                            <span class="preview-value" id="previewFileType">-</span>
+                        </div>
+                        <div class="preview-info-row">
+                            <span class="preview-label">大小</span>
+                            <span class="preview-value" id="previewFileSize">-</span>
+                        </div>
+                        <div class="preview-info-row">
+                            <span class="preview-label">时间</span>
+                            <span class="preview-value" id="previewFileTime">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="action-btn primary" id="refreshBtn">
+                        <span>🔄</span> 刷新
+                    </button>
+                    <button class="action-btn warning" id="clearAllBtn">
+                        <span>🗑️</span> 清空
+                    </button>
+                </div>
+
+                <div class="log-area" id="logMessage">
+                    ⚡ 就绪，正在监听前端数据...
+                </div>
+            </div>
+
+            <!-- 右侧：媒体卡片网格 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🗂️ 接收到的媒体</h2>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all" id="filterAll">全部</button>
+                        <button class="filter-tab" data-filter="photo" id="filterPhoto">照片</button>
+                        <button class="filter-tab" data-filter="video" id="filterVideo">录像</button>
+                    </div>
+                </div>
+
+                <div class="media-grid" id="mediaGrid">
+                    <div class="empty-gallery">📭 暂无数据，请在前端页面拍照</div>
+                </div>
+
+                <div style="margin-top: 16px; color:#48484d; font-size:12px; text-align: center;">
+                    ⚡ 照片点击可预览 · 点击⬇️下载真实图片
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-tip">
+            🔗 正在监听 localStorage · 请确保前端页面已打开并授权摄像头
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // DOM 元素
+            const previewImage = document.getElementById('previewImage');
+            const previewVideo = document.getElementById('previewVideo');
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const previewInfo = document.getElementById('previewInfo');
+            const previewFileName = document.getElementById('previewFileName');
+            const previewFileType = document.getElementById('previewFileType');
+            const previewFileSize = document.getElementById('previewFileSize');
+            const previewFileTime = document.getElementById('previewFileTime');
+            const previewStatus = document.getElementById('previewStatus');
+            
+            const mediaGrid = document.getElementById('mediaGrid');
+            const photoCountSpan = document.getElementById('photoCount');
+            const videoCountSpan = document.getElementById('videoCount');
+            const totalCountSpan = document.getElementById('totalCount');
+            const logMessage = document.getElementById('logMessage');
+            
+            const refreshBtn = document.getElementById('refreshBtn');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const filterAll = document.getElementById('filterAll');
+            const filterPhoto = document.getElementById('filterPhoto');
+            const filterVideo = document.getElementById('filterVideo');
+
+            let mediaItems = [];
+            let currentFilter = 'all';
+            let currentPreviewId = null;
+
+            // 日志
+            function setLog(msg, isNew = false) {
+                const time = new Date().toLocaleTimeString();
+                logMessage.innerHTML = `⚡ ${msg} ${time}`;
+                if (isNew) {
+                    logMessage.style.background = '#1a1a25';
+                    setTimeout(() => logMessage.style.background = '#0f0f13', 500);
+                }
+                console.log('接收端:', msg);
+            }
+
+            // 从localStorage读取前端发来的数据
+            function loadFromStorage() {
+                try {
+                    const stored = localStorage.getItem('mockMediaList');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed)) {
+                            // 检查是否有新数据
+                            const isNew = parsed.length > mediaItems.length;
+                            mediaItems = parsed;
+                            
+                            // 按时间戳排序
+                            mediaItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                            
+                            updateUI();
+                            
+                            if (isNew && mediaItems.length > 0) {
+                                setLog(`📥 收到新媒体，共 ${mediaItems.length} 条`, true);
+                                // 自动预览最新的文件
+                                previewItem(mediaItems[0]);
+                            }
+                        }
+                    } else {
+                        mediaItems = [];
+                        updateUI();
+                    }
+                } catch (e) {
+                    console.error('读取失败', e);
+                }
+            }
+
+            // 更新界面
+            function updateUI() {
+                // 更新统计
+                const photoCount = mediaItems.filter(item => item.type === 'photo').length;
+                const videoCount = mediaItems.filter(item => item.type === 'video').length;
+                photoCountSpan.innerText = photoCount;
+                videoCountSpan.innerText = videoCount;
+                totalCountSpan.innerText = mediaItems.length;
+
+                // 更新预览状态文字
+                if (mediaItems.length > 0) {
+                    previewStatus.innerHTML = `有 ${mediaItems.length} 条媒体`;
+                } else {
+                    previewStatus.innerHTML = `等待数据 <span class="waiting-animation"></span>`;
+                }
+
+                // 过滤
+                let filtered = mediaItems;
+                if (currentFilter === 'photo') filtered = mediaItems.filter(i => i.type === 'photo');
+                if (currentFilter === 'video') filtered = mediaItems.filter(i => i.type === 'video');
+
+                renderCards(filtered);
+            }
+
+            // 渲染卡片
+            function renderCards(items) {
+                if (items.length === 0) {
+                    mediaGrid.innerHTML = `<div class="empty-gallery">📭 暂无${currentFilter!=='all' ? (currentFilter==='photo'?'照片':'录像') : ''}媒体</div>`;
+                    return;
+                }
+
+                let html = '';
+                items.forEach(item => {
+                    const date = item.timestamp ? new Date(item.timestamp).toLocaleString().slice(0, 16) : '未知时间';
+                    const isSelected = item.id === currentPreviewId;
+                    
+                    // 缩略图：如果有dataUrl就用图片，否则用图标
+                    let thumbContent = '';
+                    if (item.type === 'photo' && item.dataUrl) {
+                        thumbContent = `<img src="${item.dataUrl}" alt="thumbnail" style="width:100%;height:100%;object-fit:cover;">`;
+                    } else {
+                        thumbContent = item.type === 'photo' ? '📸' : '🎥';
+                    }
+                    
+                    html += `
+                        <div class="media-card ${isSelected ? 'selected' : ''}" data-id="${item.id}">
+                            <div class="media-thumb">
+                                ${thumbContent}
+                            </div>
+                            <div class="media-name">${item.name || '未命名'}</div>
+                            <div class="media-meta">${date}</div>
+                            <span class="media-badge ${item.type}">${item.type === 'photo' ? '照片' : '录像'}</span>
+                            <div class="media-actions">
+                                <button class="icon-btn download" onclick="window.downloadItem('${item.id}')" title="下载">⬇️</button>
+                                <button class="icon-btn delete" onclick="window.deleteItem('${item.id}')" title="删除">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                mediaGrid.innerHTML = html;
+
+                // 添加点击预览事件
+                document.querySelectorAll('.media-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.icon-btn')) return;
+                        const id = card.dataset.id;
+                        const item = mediaItems.find(i => i.id === id);
+                        if (item) {
+                            previewItem(item);
+                        }
+                    });
+                });
+            }
+
+            // 预览文件
+            function previewItem(item) {
+                if (!item) return;
+                
+                currentPreviewId = item.id;
+                
+                // 更新预览信息
+                previewFileName.textContent = item.name || '未命名';
+                previewFileType.textContent = item.type === 'photo' ? '照片' : '录像';
+                previewFileSize.textContent = item.size || '~1MB';
+                previewFileTime.textContent = item.timestamp ? new Date(item.timestamp).toLocaleString() : '未知';
+                
+                // 隐藏所有预览元素
+                previewImage.style.display = 'none';
+                previewVideo.style.display = 'none';
+                previewPlaceholder.style.display = 'none';
+                previewInfo.style.display = 'block';
+                
+                if (item.type === 'photo' && item.dataUrl) {
+                    // 有真实图片数据！
+                    previewImage.src = item.dataUrl;
+                    previewImage.style.display = 'block';
+                } else if (item.type === 'video' && item.videoUrl) {
+                    previewVideo.src = item.videoUrl;
+                    previewVideo.style.display = 'block';
+                    previewVideo.play().catch(e => console.log('自动播放失败', e));
+                } else {
+                    // 没有预览数据
+                    previewPlaceholder.style.display = 'flex';
+                    previewPlaceholder.innerHTML = `
+                        <div class="icon">${item.type === 'photo' ? '📸' : '🎥'}</div>
+                        <div>${item.name || '无预览'}</div>
+                        <div style="font-size:12px; color:#666;">无预览数据</div>
+                    `;
+                    previewInfo.style.display = 'none';
+                }
+                
+                // 更新选中状态
+                document.querySelectorAll('.media-card').forEach(card => {
+                    card.classList.toggle('selected', card.dataset.id === item.id);
+                });
+                
+                setLog(`预览: ${item.name}`);
+            }
+
+            // 全局函数供按钮调用
+            window.downloadItem = function(id) {
+                const item = mediaItems.find(i => i.id === id);
+                if (!item) return;
+                
+                setLog(`⏳ 准备下载: ${item.name}`);
+                
+                if (item.type === 'photo' && item.dataUrl) {
+                    // 有真实图片数据，直接下载
+                    const link = document.createElement('a');
+                    link.href = item.dataUrl;
+                    link.download = item.name || 'photo.jpg';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setLog(`✅ 已下载: ${item.name}`);
+                } 
+                else if (item.type === 'video' && item.videoUrl) {
+                    // 打开视频链接
+                    window.open(item.videoUrl, '_blank');
+                    setLog(`🎥 打开视频: ${item.name}`);
+                }
+                else {
+                    // 没有真实数据，保存信息文件
+                    const content = JSON.stringify(item, null, 2);
+                    const blob = new Blob([content], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = (item.name || 'media') + '.json';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    setLog(`📄 已保存媒体信息: ${item.name}`);
+                }
+            };
+
+            window.deleteItem = function(id) {
+                mediaItems = mediaItems.filter(item => item.id !== id);
+                if (currentPreviewId === id) {
+                    currentPreviewId = null;
+                    previewImage.style.display = 'none';
+                    previewVideo.style.display = 'none';
+                    previewPlaceholder.style.display = 'flex';
+                    previewPlaceholder.innerHTML = `
+                        <div class="icon">📡</div>
+                        <div>等待前端发送数据...</div>
+                    `;
+                    previewInfo.style.display = 'none';
+                }
+                // 更新localStorage
+                localStorage.setItem('mockMediaList', JSON.stringify(mediaItems));
+                updateUI();
+                setLog('已删除一条媒体');
+            };
+
+            // 清空全部
+            function clearAll() {
+                if (confirm('确定清空所有媒体吗？')) {
+                    mediaItems = [];
+                    currentPreviewId = null;
+                    previewImage.style.display = 'none';
+                    previewVideo.style.display = 'none';
+                    previewPlaceholder.style.display = 'flex';
+                    previewPlaceholder.innerHTML = `
+                        <div class="icon">📡</div>
+                        <div>等待前端发送数据...</div>
+                    `;
+                    previewInfo.style.display = 'none';
+                    localStorage.removeItem('mockMediaList');
+                    updateUI();
+                    setLog('已清空所有媒体');
+                }
+            }
+
+            // 过滤器
+            function setFilter(filter) {
+                currentFilter = filter;
+                [filterAll, filterPhoto, filterVideo].forEach(btn => btn.classList.remove('active'));
+                if (filter === 'all') filterAll.classList.add('active');
+                if (filter === 'photo') filterPhoto.classList.add('active');
+                if (filter === 'video') filterVideo.classList.add('active');
+                updateUI();
+            }
+
+            // 监听storage事件（前端发数据时会触发）
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'mockMediaList') {
+                    console.log('检测到storage变化', e);
+                    loadFromStorage();
+                }
+            });
+
+            // 手动刷新
+            refreshBtn.addEventListener('click', () => {
+                loadFromStorage();
+                setLog('已手动刷新');
+            });
+
+            clearAllBtn.addEventListener('click', clearAll);
+            
+            filterAll.addEventListener('click', () => setFilter('all'));
+            filterPhoto.addEventListener('click', () => setFilter('photo'));
+            filterVideo.addEventListener('click', () => setFilter('video'));
+
+            // 初始化
+            loadFromStorage();
+            
+            // 每2秒检查一次
+            setInterval(loadFromStorage, 2000);
+        })();
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
